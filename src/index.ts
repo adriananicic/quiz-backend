@@ -77,29 +77,63 @@ app.put("/quiz/:id", async (req, res) => {
     const { name, questionIds } = req.body;
     
     try {
-      // Update the quiz name
-      const updatedQuiz = await prisma.quiz.update({
-        where: {
-          id: parseInt(id),
-        },
-        data: {
-          name,
-          QuizQuestion: {
-            connect: questionIds.map((questionId: number) => ({ id: parseInt(questionId.toString()) })),
-          },
-        },
-        include: {
-          QuizQuestion: true
-        },
-      });
+        // Fetch existing QuizQuestion records for the given quiz ID
+        const existingQuizQuestions = await prisma.quizQuestion.findMany({
+            where: {
+                quizId: parseInt(id)
+            }
+        });
+
+        // Extract the IDs of existing QuizQuestion records
+        const existingQuestionIds = existingQuizQuestions.map(quizQuestion => quizQuestion.questionId);
+
+        // Identify existing connections
+        const connectedQuestionIds = existingQuestionIds.filter(questionId => questionIds.includes(questionId));
+
+        // Identify new connections
+        const newQuestionIds = questionIds.filter((questionId:number) => !existingQuestionIds.includes(questionId));
+
+        // Identify connections to be deleted
+        const connectionsToDelete = existingQuizQuestions.filter(quizQuestion => !questionIds.includes(quizQuestion.questionId));
+
+        // Create new connections
+        const createConnections = newQuestionIds.map((questionId:number) => prisma.quizQuestion.create({
+            data: {
+                quizId: parseInt(id),
+                questionId: parseInt(questionId.toString())
+            }
+        }));
+
+        // Delete connections to be deleted
+        const deleteConnections = connectionsToDelete.map(quizQuestion => prisma.quizQuestion.delete({
+            where: {
+                quizId_questionId: {
+                    quizId: parseInt(id),
+                    questionId: quizQuestion.questionId
+                }
+            }
+        }));
+
+        // Perform the create and delete operations in a transaction
+        await prisma.$transaction([...createConnections, ...deleteConnections]);
+
+        // Update the quiz name
+        const updatedQuiz = await prisma.quiz.update({
+            where: {
+                id: parseInt(id),
+            },
+            data: {
+                name
+            }
+        });
   
-      res.json(updatedQuiz);
+        res.json(updatedQuiz);
     } catch (error) {
-      res.status(500).json({ error: "Could not update quiz " + error });
+        res.status(500).json({ error: "Could not update quiz " + error });
     }
-  });
-  
-  
+});
+
+
   // Delete a quiz by ID
 app.delete("/quiz/:id", async (req, res) => {
     const { id } = req.params;
