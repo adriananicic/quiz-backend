@@ -26,10 +26,14 @@ app.post("/quiz", async (req, res) => {
       });
       res.json(newQuiz);
     } catch (error) {
+      console.log(error)
       res.status(500).json({ error: "Could not create quiz" });
     }
   });
   
+  type Question = { questionId: number; question: string; answer: string; }
+  type Quiz = { name: string; quizId: number; questions: Question[]; }
+
   // Get all quizzes with their questions
   app.get("/quiz", async (_req, res) => {
     try {
@@ -43,7 +47,26 @@ app.post("/quiz", async (req, res) => {
         }
       });
 
-      res.json(quizzes);
+      const returnArray: Quiz[] = []
+      for(let quiz of quizzes){
+        let questions:Question[] = []
+        for (let question of quiz.QuizQuestion){
+            let newQuestion = {
+                questionId:question.questionId,
+                question: question.question.question,
+                answer: question.question.answer
+            }
+            questions.push(newQuestion)
+        }
+        let newQuiz = {
+            name:quiz.name,
+            quizId:quiz.id,
+            questions:questions
+        }
+        returnArray.push(newQuiz)
+      }
+
+      res.json(returnArray);
     } catch (error) {
       res.status(500).json({ error: "Could not retrieve quizzes" });
     }
@@ -65,7 +88,23 @@ app.post("/quiz", async (req, res) => {
           }
         }
       });
-      res.json(quiz);
+      let questions:Question[] = []
+      if(!quiz) return null
+      for (let question of quiz.QuizQuestion){
+          let newQuestion = {
+              questionId:question.questionId,
+              question: question.question.question,
+              answer: question.question.answer
+          }
+          questions.push(newQuestion)
+      }
+      let returnQuiz:Quiz = {
+        name:quiz.name,
+        quizId:quiz.id,
+        questions:questions
+      }
+
+      res.json(returnQuiz);
     } catch (error) {
       res.status(500).json({ error: "Could not retrieve quiz" });
     }
@@ -163,6 +202,7 @@ app.delete("/quiz/:id", async (req, res) => {
           answer,
         },
       });
+      console.log(newQuestion)
       res.json(newQuestion);
     } catch (error) {
         console.log(error)
