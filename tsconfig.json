@@ -2,7 +2,12 @@
     "compilerOptions": {
       "checkJs": true,
       "esModuleInterop": true,
-      "module": "ESNext"
+      "module": "ESNext",
+      "moduleResolution": "node",
+      "baseUrl": ".",
+      "paths": {
+        "*": ["node_modules/*"]
+      }
     }
   }
   
