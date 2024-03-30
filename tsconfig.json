@@ -1,8 +1,8 @@
 {
-    "compilerOptions":
-    {
-        "checkJs": true,
-        "esModuleInterop": true
+    "compilerOptions": {
+      "checkJs": true,
+      "esModuleInterop": true,
+      "module": "ESNext"
     }
-    
-}
+  }
+  
